@@ -12,6 +12,8 @@ import {
   ModalBackdrop,
   ModalContent,
   ModalHeader,
+  Input,
+  InputField,
   ModalFooter,
   Icon,
   CloseIcon,
@@ -21,8 +23,9 @@ import {
   ModalCloseButton,
   HStack,
 } from "@gluestack-ui/themed";
-import DateTimePicker from '@react-native-community/datetimepicker';
+// import DateTimePicker from '@react-native-community/datetimepicker';
 // // import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+// import DatePicker from 'react-native-date-picker'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -31,52 +34,31 @@ import firebase from "../firebase";
 const FormPenyewaan = ({ route }) => {
   console.log(route.params.data)
   const data = (route.params.data);
+
   const [showModal, setShowModal] = useState(false)
   const ref = React.useRef(null)
   const navigation = useNavigation();
   const [Deskripsi, setDeskripsi] = useState('')
-  const [pickupDate, setPickupDate] = useState(new Date()); // State untuk tanggal peminjaman
+  const [pickupDate, setPickupDate] = useState(new Date());// State untuk tanggal peminjaman
   const [returnDate, setReturnDate] = useState(new Date()); // State untuk tanggal pengembalian
-  const [showPickupDatePicker, setShowPickupDatePicker] = useState(false);
-  const [showReturnDatePicker, setShowReturnDatePicker] = useState(false);
+  const [open, setOpen] = useState(false)
   console.log(data.number)
+  console.log(open)
 
-  const getUserData = async () => {
-    try {
-      const userDataString = await AsyncStorage.getItem("user-data");
-      console.log("Data from AsyncStorage:", userDataString)
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        setUserData(userData);
-        const uid = userData.credential.user.uid;
-
-        // Menampilkan UID ke konsol
-        console.log("User UID from AsyncStorage:", uid);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleDateChange = (isPickup, text) => {
+    const parts = text.split('/').map(part => parseInt(part, 10));
+    const parsedDate = new Date(parts[2], parts[1] - 1, parts[0]); 
+    isPickup ? setPickupDate(parsedDate) : setReturnDate(parsedDate);
   };
-  const handleGoBack = () => {
-    // Gunakan fungsi navigate untuk kembali ke layar sebelumnya
-    navigation.goBack();
+
+  const formatDate = (date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-based
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
 
-
-  const onPickupDateChange = (_, selected) => {
-    if (selected) {
-      setPickupDate(selected);
-      setShowPickupDatePicker(false);
-    }
-  };
-
-  const onReturnDateChange = (_, selected) => {
-    if (selected) {
-      setReturnDate(selected);
-      setShowReturnDatePicker(false);
-    }
-  };
   console.log(data.number)
   const handlePostCostume = async () => {
     try {
@@ -163,41 +145,32 @@ const FormPenyewaan = ({ route }) => {
         <Box height={'100%'} backgroundColor="white" borderTopEndRadius={20} borderTopStartRadius={20} padding={10}>
           <Text fontWeight="bold" fontSize={16} marginTop={10}>Form Penyewaan</Text>
 
-           <Box flexDirection="column" justifyContent="space-between" marginTop={15}>
+          <Box flexDirection="column" justifyContent="space-between" marginTop={15}>
             <Box width="100%">
               <HStack>
                 <Text marginBottom={5} fontSize={14}>
                   Tanggal Peminjaman:
                 </Text>
               </HStack>
-              <Pressable onPress={() => setShowPickupDatePicker(true)}>
-                <Text padding={8} borderWidth={1} borderRadius={5} marginBottom={20}
-                  borderBottomWidth={3}
-                  borderEndWidth={3}
-                  borderTopWidth={1}
-                  borderStartWidth={1}
-                  borderColor='#021C35'>
-                  {pickupDate.toDateString()}
-                </Text>
-              </Pressable>
-              {showPickupDatePicker && (
-                <DateTimePicker
-                  value={pickupDate}
-                  mode="date"
-                  display="calendar"
-                  onChange={onPickupDateChange}
-                  minimumDate={new Date()}
-                  style={{
-                    borderBottomWidth: 3,
-                    borderEndWidth: 3,
-                    borderTopWidth: 1,
-                    borderStartWidth: 1,
-                    borderColor: '#021C35',
-                    // Tambahkan properti gaya lainnya di sini sesuai kebutuhan
-                  }}
+              <Input
+                variant="outline"
+                size="md"
+                isDisabled={false}
+                isInvalid={false}
+                isReadOnly={false}
+                borderColor='#021C35'
+                borderBottomWidth={3}
+                borderEndWidth={3}
+                marginBottom={10}
+                rounded={7}
+              >
+                <InputField
+                  placeholder="DD/MM/YYYY"
+                  value={pickupDate ? formatDate(pickupDate) : ""}
+                  onChangeText={(text) => handleDateChange(true, text)}
+                  keyboardType="numeric"
                 />
-
-              )}
+              </Input>
             </Box>
 
             <Box width="100%">
@@ -206,25 +179,24 @@ const FormPenyewaan = ({ route }) => {
                   Tanggal Pengembalian:
                 </Text>
               </HStack>
-              <Pressable onPress={() => setShowReturnDatePicker(true)} >
-                <Text padding={8} borderWidth={1} borderRadius={5} marginBottom={20}
-                  borderBottomWidth={3}
-                  borderEndWidth={3}
-                  borderTopWidth={1}
-                  borderStartWidth={1}
-                  borderColor='#021C35'>
-                  {returnDate.toDateString()}
-                </Text>
-              </Pressable>
-              {showReturnDatePicker && (
-                <DateTimePicker
-                  value={returnDate}
-                  mode="date"
-                  display="calendar"
-                  minimumDate={new Date()}
-                  onChange={onReturnDateChange}
+              <Input
+                variant="outline"
+                size="md"
+                isDisabled={false}
+                isInvalid={false}
+                marginBottom={10}
+                borderColor='#021C35'
+                borderBottomWidth={3}
+                borderEndWidth={3}
+                isReadOnly={false}
+              >
+                <InputField
+                  placeholder="DD/MM/YYYY"
+                  value={returnDate ? formatDate(returnDate) : ""}
+                  onChangeText={(text) => handleDateChange(false, text)}
+                  keyboardType="numeric"
                 />
-              )}
+              </Input>
             </Box>
           </Box>
 
@@ -245,7 +217,7 @@ const FormPenyewaan = ({ route }) => {
 
               <TextareaInput placeholder="Catatan Tambahan..." role="dialog" onChangeText={(text) => setDeskripsi(text)} />
             </Textarea>
-          </Box> 
+          </Box>
 
           <Center flex={1} flexDirection="row">
             <Text onPress={() => setShowModal(true)} ref={ref}
@@ -256,6 +228,7 @@ const FormPenyewaan = ({ route }) => {
               color="white"
               fontWeight="bold"
               marginTop={0}
+
               fontSize={13}
             >
               Konfirmasi
@@ -313,6 +286,7 @@ const FormPenyewaan = ({ route }) => {
                 </ModalContent>
               </Center>
             </Modal>
+
           </Center>
         </Box>
       </Box>
